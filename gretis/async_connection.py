@@ -252,15 +252,18 @@ class AsyncConnection(Connection):
         if self._iostream is None:
             return
 
-        if self._timeout_handle:
-            self._ioloop.remove_timeout(self._timeout_handle)
-            self._timeout_handle = None
-        self._iostream.set_close_callback(None)
-        self._iostream.close()
-        self._iostream = None
+        try:
+            if self._timeout_handle:
+                self._ioloop.remove_timeout(self._timeout_handle)
+                self._timeout_handle = None
+            self._iostream.set_close_callback(None)
+            self._iostream.close()
 
-        # This will call into the AsynchiredisParser on_disconnect.
-        super(AsyncConnection, self).disconnect()
+            # This will call into the AsynchiredisParser on_disconnect.
+            super(AsyncConnection, self).disconnect()
+        except socket.error:
+            pass
+        self._iostream = None
 
     def _handle_write_timeout(self, write_greenlet):
         write_greenlet.throw(TimeoutError("Timeout writing to socket"))
